@@ -1,5 +1,5 @@
 {
-    "name": "razorpay/magento",
+    "name": "getjohn/razorpay-magento",
     "description": "Razorpay Magento 2.0 plugin for accepting payments.",
     "version": "4.1.7",
     "require": {
