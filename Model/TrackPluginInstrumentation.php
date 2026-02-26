@@ -7,30 +7,7 @@ use Magento\Framework\Module\ModuleListInterface;
 use Razorpay\Api\Errors;
 use Razorpay\Magento\Model\PaymentMethod;
 use Razorpay\Magento\Model\Config;
-
-use function PHPSTORM_META\type;
-use Requests;
-
-// Include Requests only if not already defined
-if (class_exists('WpOrg\Requests\Autoload') === false)
-{
-    require_once __DIR__.'/../../Razorpay/Razorpay.php';
-}
-
-try
-{
-    \WpOrg\Requests\Autoload::register();
-
-    if (version_compare(Requests::VERSION, '1.6.0') === -1)
-    {
-        throw new Exception('Requests class found but did not match');
-    }
-}
-catch (\Exception $e)
-{
-    throw new Exception('Requests class found but did not match');
-}
-
+use GuzzleHttp\Client;
 
 class TrackPluginInstrumentation
 {
@@ -65,7 +42,7 @@ class TrackPluginInstrumentation
 
         return $apiInstance;
     }
-    
+
     public function rzpTrackSegment($event, $properties)
     {
         try
@@ -135,9 +112,6 @@ class TrackPluginInstrumentation
 
             $defaultProperties = $this->getDefaultProperties();
 
-            $mode = $defaultProperties['mode'];
-            unset($defaultProperties['mode']);
-
             $properties = array_merge($properties, $defaultProperties);
 
             $headers = [
@@ -146,8 +120,8 @@ class TrackPluginInstrumentation
 
             $data = json_encode(
                 [
-                    'mode'   => $mode,
-                    'key'    => '0c08FC07b3eF5C47Fc19B6544afF4A98',
+                    'mode'   => $mode ?? 'test',
+                    'key'    => $this->config->getConfigData(Config::KEY_PUBLIC_KEY) ?? '',
                     'events' => [
                         [
                             'event_type'    => 'plugin-events',
@@ -160,11 +134,11 @@ class TrackPluginInstrumentation
                 ]
             );
 
-            $options = [
-                'timeout'   => 45
-            ];
-
-            $request = Requests::post("https://lumberjack.razorpay.com/v1/track", $headers, $data, $options);
+            $client = new Client(['timeout' => 45]);
+            $response = $client->post('https://lumberjack.razorpay.com/v1/track', [
+                'headers' => $headers,
+                'body'    => $data,
+            ]);
 
             return ['status' => 'success'];
         }
@@ -212,5 +186,3 @@ class TrackPluginInstrumentation
         return $defaultProperties;
     }
 }
-
-?>

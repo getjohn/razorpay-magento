@@ -211,6 +211,10 @@ class AfterConfigSaveObserver implements ObserverInterface
 
         $metaData = array("store_name" => $storeName);
 
+        if (!isset($razorpayParamsFormattedArray)) {
+            $razorpayParamsFormattedArray = array('config_settings' => array());
+        }
+
         $eventData = array_merge($razorpayParamsFormattedArray, $metaData);
 
         $this->logger->info("Event : Save Config Clicked. In function " . __METHOD__);

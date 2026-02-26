@@ -80,7 +80,7 @@ class ResetCart implements ResolverInterface
                $order_id = $order->getId();
             }
         } 
-        catch (Exception $exception) 
+        catch (\Exception $exception)
         {
             $this->logger->critical($exception->getMessage());
             

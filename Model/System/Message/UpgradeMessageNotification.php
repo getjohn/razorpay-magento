@@ -4,27 +4,7 @@ namespace Razorpay\Magento\Model\System\Message;
 
 use Magento\Framework\Notification\MessageInterface;
 use Razorpay\Magento\Model\Config;
-use Requests;
-
-// Include Requests only if not already defined
-if (class_exists('WpOrg\Requests\Autoload') === false)
-{
-    require_once __DIR__.'/../../../../Razorpay/Razorpay.php';
-}
-
-try
-{
-    \WpOrg\Requests\Autoload::register();
-
-    if (version_compare(Requests::VERSION, '1.6.0') === -1)
-    {
-        throw new Exception('Requests class found but did not match');
-    }
-}
-catch (\Exception $e)
-{
-    throw new Exception('Requests class found but did not match');
-}
+use GuzzleHttp\Client;
 
 class UpgradeMessageNotification implements MessageInterface
 {
@@ -78,30 +58,36 @@ class UpgradeMessageNotification implements MessageInterface
             $this->currentVersion =  $objectManager->get('Magento\Framework\Module\ModuleList')
                                      ->getOne('Razorpay_Magento')['setup_version'];
 
-            $request = Requests::get("https://api.github.com/repos/razorpay/razorpay-magento/releases/latest");
+            try {
+                $client = new Client(['timeout' => 10]);
+                $response = $client->get('https://api.github.com/repos/razorpay/razorpay-magento/releases/latest');
 
-            if ($request->status_code === 200)
-            {
-                 $razorpayLatestRelease = json_decode($request->body);
-
-                 $this->latestVersion = $razorpayLatestRelease->tag_name;
-
-                 $this->latestVersionLink = $razorpayLatestRelease->html_url;
-
-                // fix for beta version check, as version comapre is not comparing for versions with postfix -beta
-                if (strpos($this->currentVersion, '-beta') !== false)
+                if ($response->getStatusCode() === 200)
                 {
-                    $betaVersion = $this->currentVersion;
-                    $betaVersion = str_replace('-beta', '', $betaVersion);
-                    $betaVersion = 'beta-' . $betaVersion;
+                     $razorpayLatestRelease = json_decode($response->getBody()->getContents());
 
-                    $this->currentVersion = $betaVersion;
-                }
+                     $this->latestVersion = $razorpayLatestRelease->tag_name;
 
-                if (version_compare($this->currentVersion, $this->latestVersion, '<'))
-                {
-                    return true;
+                     $this->latestVersionLink = $razorpayLatestRelease->html_url;
+
+                    // fix for beta version check, as version comapre is not comparing for versions with postfix -beta
+                    if (strpos($this->currentVersion, '-beta') !== false)
+                    {
+                        $betaVersion = $this->currentVersion;
+                        $betaVersion = str_replace('-beta', '', $betaVersion);
+                        $betaVersion = 'beta-' . $betaVersion;
+
+                        $this->currentVersion = $betaVersion;
+                    }
+
+                    if (version_compare($this->currentVersion, $this->latestVersion, '<'))
+                    {
+                        return true;
+                    }
                 }
+            } catch (\Exception $e) {
+                // Silently fail — upgrade check is non-critical
+                return false;
             }
         }
         return false;

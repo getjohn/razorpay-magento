@@ -151,7 +151,7 @@ class Validate extends \Razorpay\Magento\Controller\BaseController implements Cs
     public function createCsrfValidationException(
         RequestInterface $request
     ): ?InvalidRequestException {
-        return true;
+        return null;
     }
 
     /**
@@ -394,7 +394,7 @@ class Validate extends \Razorpay\Magento\Controller\BaseController implements Cs
     {
         $request = $this->fileGetContents();
 
-        return json_decode($request, true);
+        return json_decode($request, true) ?? [];
     }
 
     // @codeCoverageIgnoreStart
